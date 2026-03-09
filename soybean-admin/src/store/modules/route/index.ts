@@ -213,8 +213,17 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
     if (!error) {
       const { routes, home } = data;
+      const { authRoutes: staticAuthRoutes } = createStaticRoutes();
+      const mustKeepRouteNames: RouteKey[] = ['user-center'];
+      const mustKeepRoutes = staticAuthRoutes.filter(route => mustKeepRouteNames.includes(route.name as RouteKey));
+      const mergedRoutesMap = new Map<string, ElegantConstRoute>();
 
-      addAuthRoutes(routes);
+      [...routes, ...mustKeepRoutes].forEach(route => {
+        mergedRoutesMap.set(route.name, route as ElegantConstRoute);
+      });
+      const mergedRoutes = Array.from(mergedRoutesMap.values());
+
+      addAuthRoutes(mergedRoutes);
 
       handleConstantAndAuthRoutes();
 

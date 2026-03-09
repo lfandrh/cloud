@@ -30,9 +30,8 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
 
   /** is super role in static route */
   const isStaticSuper = computed(() => {
-    const { VITE_AUTH_ROUTE_MODE, VITE_STATIC_SUPER_ROLE } = import.meta.env;
-
-    return VITE_AUTH_ROUTE_MODE === 'static' && userInfo.roles.includes(VITE_STATIC_SUPER_ROLE);
+    const { VITE_STATIC_SUPER_ROLE } = import.meta.env;
+    return userInfo.roles.includes(VITE_STATIC_SUPER_ROLE);
   });
 
   /** Is login */

@@ -11,7 +11,7 @@ defineOptions({
 });
 
 const authStore = useAuthStore();
-const { routerPushByKey, toLogin } = useRouterPush();
+const { routerPushByKey, routerPush, toLogin } = useRouterPush();
 const { SvgIconVNode } = useSvgIcon();
 
 function loginOrRegister() {
@@ -68,8 +68,12 @@ function handleDropdown(key: DropdownKey) {
   if (key === 'logout') {
     logout();
   } else {
-    // If your other options are jumps from other routes, they will be directly supported here
-    routerPushByKey(key);
+    // Prefer route name and fallback to path to avoid silent no-op when dynamic routes are not ready.
+    routerPushByKey(key).catch(() => {
+      if (key === 'user-center') {
+        routerPush('/user-center');
+      }
+    });
   }
 }
 </script>

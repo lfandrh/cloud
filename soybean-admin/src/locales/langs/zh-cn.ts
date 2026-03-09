@@ -634,6 +634,31 @@ const local: App.I18n.Schema = {
           local: '本地图标'
         }
       }
+    },
+    userCenter: {
+      profile: {
+        title: '基础信息',
+        userName: '用户名',
+        nickName: '昵称',
+        nickNamePlaceholder: '请输入昵称',
+        gender: '性别',
+        phone: '手机号',
+        phonePlaceholder: '请输入手机号',
+        email: '邮箱',
+        emailPlaceholder: '请输入邮箱',
+        save: '保存基础信息'
+      },
+      password: {
+        title: '修改密码',
+        oldPassword: '旧密码',
+        oldPasswordPlaceholder: '请输入旧密码',
+        newPassword: '新密码',
+        newPasswordPlaceholder: '请输入新密码',
+        confirmPassword: '确认密码',
+        confirmPasswordPlaceholder: '请再次输入新密码',
+        save: '保存新密码',
+        updatedRelogin: '密码修改成功，请重新登录'
+      }
     }
   },
   form: {

@@ -813,6 +813,31 @@ declare namespace App {
             };
           };
         };
+        userCenter: {
+          profile: {
+            title: string;
+            userName: string;
+            nickName: string;
+            nickNamePlaceholder: string;
+            gender: string;
+            phone: string;
+            phonePlaceholder: string;
+            email: string;
+            emailPlaceholder: string;
+            save: string;
+          };
+          password: {
+            title: string;
+            oldPassword: string;
+            oldPasswordPlaceholder: string;
+            newPassword: string;
+            newPasswordPlaceholder: string;
+            confirmPassword: string;
+            confirmPasswordPlaceholder: string;
+            save: string;
+            updatedRelogin: string;
+          };
+        };
       };
       form: {
         required: string;

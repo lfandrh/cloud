@@ -26,8 +26,8 @@ const rules = computed<Record<RuleKey, App.Global.FormRule>>(() => {
   const { patternRules } = useFormRules(); // inside computed to make locale reactive
 
   return {
-    userEmail: patternRules.email,
-    userPhone: patternRules.phone
+    // userEmail: patternRules.email,
+    // userPhone: patternRules.phone
   };
 });
 

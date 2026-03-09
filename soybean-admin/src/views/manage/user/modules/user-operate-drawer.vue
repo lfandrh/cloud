@@ -81,13 +81,14 @@ async function getRoleOptions() {
 
     // the mock data does not have the roleCode, so fill it
     // if the real request, remove the following code
-    const userRoleOptions = model.value.userRoles.map(item => ({
-      label: item,
-      value: item
-    }));
+    // const userRoleOptions = model.value.userRoles.map(item => ({
+    //   label: item,
+    //   value: item
+    // }));
     // end
 
-    roleOptions.value = [...userRoleOptions, ...options];
+    // roleOptions.value = [...userRoleOptions, ...options];
+    roleOptions.value = [...options];
   }
 }
 
@@ -96,6 +97,13 @@ function handleInitModel() {
 
   if (props.operateType === 'edit' && props.rowData) {
     Object.assign(model.value, jsonClone(props.rowData));
+  }
+
+  if (model.value.userGender !== null) {
+      model.value.userGender = String(model.value.userGender) as Model['userGender'];
+  }
+  if (model.value.status !== null) {
+    model.value.status = String(model.value.status) as Model['status'];
   }
 }
 

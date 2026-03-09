@@ -33,7 +33,8 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
     {
       type: 'selection',
       align: 'center',
-      width: 48
+      width: 48,
+      disabled: row => row.userName === 'admin'
     },
     {
       key: 'index',
@@ -116,11 +117,11 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
           <NButton type="primary" ghost size="small" onClick={() => edit(row.id)}>
             {$t('common.edit')}
           </NButton>
-          <NPopconfirm onPositiveClick={() => handleDelete(row.id)}>
+          <NPopconfirm disabled={row.userName === 'admin'} onPositiveClick={() => handleDelete(row.id)}>
             {{
               default: () => $t('common.confirmDelete'),
               trigger: () => (
-                <NButton type="error" ghost size="small">
+                <NButton type="error" ghost size="small" disabled={row.userName === 'admin'}>
                   {$t('common.delete')}
                 </NButton>
               )

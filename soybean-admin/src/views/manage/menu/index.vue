@@ -5,9 +5,9 @@ import { NButton, NPopconfirm, NTag } from 'naive-ui';
 import { useBoolean } from '@sa/hooks';
 import { yesOrNoRecord } from '@/constants/common';
 import { enableStatusRecord, menuTypeRecord } from '@/constants/business';
-import { fetchGetAllPages, fetchGetMenuList } from '@/service/api';
+import { fetchBatchDeleteMenu, fetchDeleteMenu, fetchGetAllPages, fetchGetMenuTreeList } from '@/service/api';
 import { useAppStore } from '@/store/modules/app';
-import { defaultTransform, useNaivePaginatedTable, useTableOperate } from '@/hooks/common/table';
+import { useNaiveTable, useTableOperate } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import SvgIcon from '@/components/custom/svg-icon.vue';
 import MenuOperateModal, { type OperateType } from './modules/menu-operate-modal.vue';
@@ -18,9 +18,15 @@ const { bool: visible, setTrue: openModal } = useBoolean();
 
 const wrapperRef = ref<HTMLElement | null>(null);
 
-const { columns, columnChecks, data, loading, pagination, getData, getDataByPage } = useNaivePaginatedTable({
-  api: () => fetchGetMenuList(),
-  transform: response => defaultTransform(response),
+const { columns, columnChecks, data, loading, getData, scrollX } = useNaiveTable({
+  api: fetchGetMenuTreeList,
+  transform: response => {
+    const { data: list, error } = response;
+    if (!error) {
+      return list;
+    }
+    return [];
+  },
   columns: () => [
     {
       type: 'selection',
@@ -173,6 +179,8 @@ const { columns, columnChecks, data, loading, pagination, getData, getDataByPage
 
 const { checkedRowKeys, onBatchDeleted, onDeleted } = useTableOperate(data, 'id', getData);
 
+const expandedRowKeys = ref<number[]>([]);
+
 const operateType = ref<OperateType>('add');
 
 function handleAdd() {
@@ -181,17 +189,23 @@ function handleAdd() {
 }
 
 async function handleBatchDelete() {
-  // request
-  console.log(checkedRowKeys.value);
+  const ids = checkedRowKeys.value as number[];
 
-  onBatchDeleted();
+  if (ids.length === 0) return;
+
+  const { error } = await fetchBatchDeleteMenu(ids);
+
+  if (!error) {
+    onBatchDeleted();
+  }
 }
 
-function handleDelete(id: number) {
-  // request
-  console.log(id);
+async function handleDelete(id: number) {
+  const { error } = await fetchDeleteMenu(id);
 
-  onDeleted();
+  if (!error) {
+    onDeleted();
+  }
 }
 
 /** the edit menu data or the parent menu data when adding a child menu */
@@ -210,6 +224,24 @@ function handleAddChildMenu(item: Api.SystemManage.Menu) {
   editingData.value = { ...item };
 
   openModal();
+}
+
+function collectMenuIds(menus: Api.SystemManage.Menu[]): number[] {
+  return menus.reduce<number[]>((ids, menu) => {
+    ids.push(menu.id);
+    if (menu.children?.length) {
+      ids.push(...collectMenuIds(menu.children));
+    }
+    return ids;
+  }, []);
+}
+
+function expandAll() {
+  expandedRowKeys.value = collectMenuIds(data.value);
+}
+
+function collapseAll() {
+  expandedRowKeys.value = [];
 }
 
 const allPages = ref<string[]>([]);
@@ -238,19 +270,25 @@ init();
           @add="handleAdd"
           @delete="handleBatchDelete"
           @refresh="getData"
-        />
+        >
+          <template #suffix>
+            <NButton size="small" @click="expandAll">展开全部</NButton>
+            <NButton size="small" @click="collapseAll">收起全部</NButton>
+          </template>
+        </TableHeaderOperation>
       </template>
       <NDataTable
         v-model:checked-row-keys="checkedRowKeys"
+        v-model:expanded-row-keys="expandedRowKeys"
         :columns="columns"
         :data="data"
         size="small"
         :flex-height="!appStore.isMobile"
-        :scroll-x="1088"
+        :scroll-x="scrollX"
         :loading="loading"
         :row-key="row => row.id"
         remote
-        :pagination="pagination"
+        :pagination="false"
         class="sm:h-full"
       />
       <MenuOperateModal
@@ -258,7 +296,7 @@ init();
         :operate-type="operateType"
         :row-data="editingData"
         :all-pages="allPages"
-        @submitted="getDataByPage"
+        @submitted="getData"
       />
     </NCard>
   </div>

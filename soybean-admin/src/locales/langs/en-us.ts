@@ -638,6 +638,31 @@ const local: App.I18n.Schema = {
           local: 'Local Icon'
         }
       }
+    },
+    userCenter: {
+      profile: {
+        title: 'Basic Info',
+        userName: 'User Name',
+        nickName: 'Nick Name',
+        nickNamePlaceholder: 'Please input nick name',
+        gender: 'Gender',
+        phone: 'Phone',
+        phonePlaceholder: 'Please input phone',
+        email: 'Email',
+        emailPlaceholder: 'Please input email',
+        save: 'Save Profile'
+      },
+      password: {
+        title: 'Change Password',
+        oldPassword: 'Old Password',
+        oldPasswordPlaceholder: 'Please input old password',
+        newPassword: 'New Password',
+        newPasswordPlaceholder: 'Please input new password',
+        confirmPassword: 'Confirm Password',
+        confirmPasswordPlaceholder: 'Please input new password again',
+        save: 'Save Password',
+        updatedRelogin: 'Password updated. Please log in again.'
+      }
     }
   },
   form: {

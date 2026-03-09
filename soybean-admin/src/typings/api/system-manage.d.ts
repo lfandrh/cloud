@@ -129,6 +129,23 @@ declare namespace Api {
     /** menu list */
     type MenuList = Common.PaginatingQueryRecord<Menu>;
 
+    type CurrentUserProfile = {
+      id: number;
+      userName: string;
+      nickName: string;
+      userGender: UserGender | null;
+      userPhone: string;
+      userEmail: string;
+      status: Api.Common.EnableStatus | null;
+    };
+
+    type UpdateCurrentUserProfileParams = Pick<CurrentUserProfile, 'nickName' | 'userGender' | 'userPhone' | 'userEmail'>;
+
+    type UpdateCurrentUserPasswordParams = {
+      oldPassword: string;
+      newPassword: string;
+    };
+
     type MenuTree = {
       id: number;
       label: string;

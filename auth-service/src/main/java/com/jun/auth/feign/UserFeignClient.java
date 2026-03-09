@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "user-service", path = "/systemManage")
+@FeignClient(name = "user-service", path = "/user")
 public interface UserFeignClient {
 
     @GetMapping("/getUserRoles")

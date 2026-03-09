@@ -1,5 +1,5 @@
 server:
-  port: 8000
+  port: 8888
 
 spring:
   application:
@@ -24,8 +24,12 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/user/**
-          filters:
-            - RewritePath=/user(?<segment>.*), /systemManage\1
+        - id: route-route
+          uri: lb://user-service
+          predicates:
+            - Path=/route/**
+#          filters:
+#            - RewritePath=/user(?<segment>.*), /systemManage\1
   # Redis 配置
   data:
     redis:

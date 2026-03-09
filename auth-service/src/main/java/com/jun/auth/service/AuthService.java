@@ -26,6 +26,8 @@ public interface AuthService {
      */
     TokenResponse loginByPhone(String phone, String captcha);
 
+    TokenResponse refreshToken(String refreshToken);
+
     /**
      * 登出
      */

@@ -2,7 +2,7 @@
 import { reactive } from 'vue';
 import { NButton, NPopconfirm, NTag } from 'naive-ui';
 import { enableStatusRecord } from '@/constants/business';
-import { fetchGetRoleList } from '@/service/api';
+import { fetchBatchDeleteRole, fetchDeleteRole, fetchGetRoleList } from '@/service/api';
 import { useAppStore } from '@/store/modules/app';
 import { defaultTransform, useNaivePaginatedTable, useTableOperate } from '@/hooks/common/table';
 import { $t } from '@/locales';
@@ -30,7 +30,8 @@ const { columns, columnChecks, data, loading, getData, getDataByPage, mobilePagi
     {
       type: 'selection',
       align: 'center',
-      width: 48
+      width: 48,
+      disabled: row => isProtectedRole(row)
     },
     {
       key: 'index',
@@ -86,11 +87,11 @@ const { columns, columnChecks, data, loading, getData, getDataByPage, mobilePagi
           <NButton type="primary" ghost size="small" onClick={() => edit(row.id)}>
             {$t('common.edit')}
           </NButton>
-          <NPopconfirm onPositiveClick={() => handleDelete(row.id)}>
+          <NPopconfirm disabled={isProtectedRole(row)} onPositiveClick={() => handleDelete(row.id)}>
             {{
               default: () => $t('common.confirmDelete'),
               trigger: () => (
-                <NButton type="error" ghost size="small">
+                <NButton type="error" ghost size="small" disabled={isProtectedRole(row)}>
                   {$t('common.delete')}
                 </NButton>
               )
@@ -108,24 +109,37 @@ const {
   editingData,
   handleAdd,
   handleEdit,
-  checkedRowKeys,
-  onBatchDeleted,
-  onDeleted
+  checkedRowKeys
   // closeDrawer
 } = useTableOperate(data, 'id', getData);
 
-async function handleBatchDelete() {
-  // request
-  console.log(checkedRowKeys.value);
+const protectedRoleCodes = ['R_SUPER', 'R_ADMIN', 'R_USER'];
+const protectedRoleNames = ['超级管理员', '管理员', '普通用户'];
 
-  onBatchDeleted();
+function isProtectedRole(role: Api.SystemManage.Role) {
+  const roleCode = (role.roleCode || '').toUpperCase();
+  const roleName = role.roleName || '';
+  return protectedRoleCodes.includes(roleCode) || protectedRoleNames.includes(roleName);
 }
 
-function handleDelete(id: number) {
-  // request
-  console.log(id);
+async function handleBatchDelete() {
+  const ids = (checkedRowKeys.value as number[]) || [];
+  if (ids.length === 0) return;
 
-  onDeleted();
+  const { error } = await fetchBatchDeleteRole(ids);
+  if (!error) {
+    window.$message?.success($t('common.deleteSuccess'));
+    checkedRowKeys.value = [];
+    await getData();
+  }
+}
+
+async function handleDelete(id: number) {
+  const { error } = await fetchDeleteRole(id);
+  if (!error) {
+    window.$message?.success($t('common.deleteSuccess'));
+    await getData();
+  }
 }
 
 function edit(id: number) {
