@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { Ref } from 'vue';
 import { NButton, NPopconfirm, NTag } from 'naive-ui';
 import { useBoolean } from '@sa/hooks';
@@ -7,12 +7,17 @@ import { yesOrNoRecord } from '@/constants/common';
 import { enableStatusRecord, menuTypeRecord } from '@/constants/business';
 import { fetchBatchDeleteMenu, fetchDeleteMenu, fetchGetAllPages, fetchGetMenuTreeList } from '@/service/api';
 import { useAppStore } from '@/store/modules/app';
+import { useAuth } from '@/hooks/business/auth';
 import { useNaiveTable, useTableOperate } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import SvgIcon from '@/components/custom/svg-icon.vue';
 import MenuOperateModal, { type OperateType } from './modules/menu-operate-modal.vue';
 
 const appStore = useAppStore();
+const { hasAuth } = useAuth();
+
+const hasAddPermission = computed(() => hasAuth(['manage_menu:add', 'add']));
+const hasDeletePermission = computed(() => hasAuth(['manage_menu:delete', 'delete']));
 
 const { bool: visible, setTrue: openModal } = useBoolean();
 
@@ -161,16 +166,18 @@ const { columns, columnChecks, data, loading, getData, scrollX } = useNaiveTable
           <NButton type="primary" ghost size="small" onClick={() => handleEdit(row)}>
             {$t('common.edit')}
           </NButton>
-          <NPopconfirm onPositiveClick={() => handleDelete(row.id)}>
-            {{
-              default: () => $t('common.confirmDelete'),
-              trigger: () => (
-                <NButton type="error" ghost size="small">
-                  {$t('common.delete')}
-                </NButton>
-              )
-            }}
-          </NPopconfirm>
+          {hasDeletePermission.value && (
+            <NPopconfirm onPositiveClick={() => handleDelete(row.id)}>
+              {{
+                default: () => $t('common.confirmDelete'),
+                trigger: () => (
+                  <NButton type="error" ghost size="small">
+                    {$t('common.delete')}
+                  </NButton>
+                )
+              }}
+            </NPopconfirm>
+          )}
         </div>
       )
     }
@@ -265,12 +272,29 @@ init();
       <template #header-extra>
         <TableHeaderOperation
           v-model:columns="columnChecks"
-          :disabled-delete="checkedRowKeys.length === 0"
+          :disabled-delete="checkedRowKeys.length === 0 || !hasDeletePermission"
           :loading="loading"
-          @add="handleAdd"
-          @delete="handleBatchDelete"
           @refresh="getData"
         >
+          <template #default>
+            <NButton v-if="hasAddPermission" size="small" ghost type="primary" @click="handleAdd">
+              <template #icon>
+                <icon-ic-round-plus class="text-icon" />
+              </template>
+              {{ $t('common.add') }}
+            </NButton>
+            <NPopconfirm v-if="hasDeletePermission" @positive-click="handleBatchDelete">
+              <template #trigger>
+                <NButton size="small" ghost type="error" :disabled="checkedRowKeys.length === 0">
+                  <template #icon>
+                    <icon-ic-round-delete class="text-icon" />
+                  </template>
+                  {{ $t('common.batchDelete') }}
+                </NButton>
+              </template>
+              {{ $t('common.confirmDelete') }}
+            </NPopconfirm>
+          </template>
           <template #suffix>
             <NButton size="small" @click="expandAll">展开全部</NButton>
             <NButton size="small" @click="collapseAll">收起全部</NButton>

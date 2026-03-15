@@ -12,4 +12,7 @@ public interface UserFeignClient {
 
     @GetMapping("/getUserRoles")
     Result<List<String>> getUserRoles(@RequestParam("userId") Long userId);
+
+    @GetMapping("/getUserButtons")
+    Result<List<String>> getUserButtons(@RequestParam("userId") Long userId);
 }

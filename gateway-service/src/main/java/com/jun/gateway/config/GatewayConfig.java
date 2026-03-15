@@ -7,9 +7,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 @Slf4j
 @Configuration
@@ -19,10 +21,28 @@ public class GatewayConfig {
     @Order(1)
     public GlobalFilter requestLogFilter() {
         return (exchange, chain) -> {
-            String path = exchange.getRequest().getURI().getPath();
-            String method = exchange.getRequest().getMethod() == null ? "UNKNOWN" : exchange.getRequest().getMethod().name();
-            log.info("[Gateway] {} {}", method, path);
-            return chain.filter(exchange);
+            long start = System.currentTimeMillis();
+            String traceId = exchange.getRequest().getHeaders().getFirst("X-Trace-Id");
+            if (traceId == null || traceId.isBlank()) {
+                traceId = UUID.randomUUID().toString().replace("-", "");
+            }
+            ServerHttpRequest request = exchange.getRequest().mutate().header("X-Trace-Id", traceId).build();
+            String path = request.getURI().getPath();
+            String method = request.getMethod() == null ? "UNKNOWN" : request.getMethod().name();
+            String userId = request.getHeaders().getFirst("X-User-Id");
+            if (userId == null || userId.isBlank()) {
+                userId = "-";
+            }
+            String finalUserId = userId;
+            String finalTraceId = traceId;
+            return chain.filter(exchange.mutate().request(request).build()).doFinally(signalType -> {
+                long durationMs = System.currentTimeMillis() - start;
+                Integer statusCode = exchange.getResponse().getStatusCode() == null
+                        ? null
+                        : exchange.getResponse().getStatusCode().value();
+                log.info("gateway_access traceId={} userId={} method={} uri={} status={} durationMs={}",
+                        finalTraceId, finalUserId, method, path, statusCode, durationMs);
+            });
         };
     }
 

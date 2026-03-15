@@ -3,7 +3,9 @@ package com.jun.user.controller;
 import com.jun.common.context.UserContext;
 import com.jun.common.result.Result;
 import com.jun.user.service.RouteService;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,6 +17,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/route")
 @RequiredArgsConstructor
+@Validated
 public class RouteController {
 
     private final RouteService routeService;
@@ -31,7 +34,7 @@ public class RouteController {
     }
 
     @GetMapping("/isRouteExist")
-    public Result<Boolean> isRouteExist(@RequestParam("routeName") String routeName) {
+    public Result<Boolean> isRouteExist(@RequestParam("routeName") @NotBlank String routeName) {
         return Result.success(routeService.isRouteExist(routeName));
     }
 }

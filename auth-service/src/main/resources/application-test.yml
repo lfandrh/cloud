@@ -1,0 +1,41 @@
+server:
+  port: ${AUTH_SERVER_PORT:8081}
+
+spring:
+  datasource:
+    url: ${MYSQL_URL}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  mybatis-plus:
+    mapper-locations: classpath*:/mapper/**/*.xml
+    type-aliases-package: com.jun.auth.entity
+    configuration:
+      map-underscore-to-camel-case: true
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    global-config:
+      db-config:
+        id-type: auto
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD:}
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1
+          max-idle: 8
+          min-idle: 0
+
+sa-token:
+  token-timeout: 2592000
+  active-timeout: -1
+  is-log: false
+  token-name: satoken
+  is-read-header: true
+

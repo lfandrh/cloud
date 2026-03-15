@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, shallowRef } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
+import { fetchGetButtonTree, fetchGetRoleButtonIds, fetchUpdateRoleButtons } from '@/service/api';
 import { $t } from '@/locales';
 
 defineOptions({
@@ -24,67 +25,83 @@ function closeModal() {
 const title = computed(() => $t('common.edit') + $t('page.manage.role.buttonAuth'));
 
 type ButtonConfig = {
-  id: number;
+  key: string;
   label: string;
-  code: string;
+  disabled?: boolean;
+  children?: ButtonConfig[];
 };
 
 const tree = shallowRef<ButtonConfig[]>([]);
+const expandedKeys = ref<string[]>([]);
+const checks = ref<string[]>([]);
+
+const hasButtonNodes = computed(() => tree.value.some(item => item.children?.length));
 
 async function getAllButtons() {
-  // request
-  tree.value = [
-    { id: 1, label: 'button1', code: 'code1' },
-    { id: 2, label: 'button2', code: 'code2' },
-    { id: 3, label: 'button3', code: 'code3' },
-    { id: 4, label: 'button4', code: 'code4' },
-    { id: 5, label: 'button5', code: 'code5' },
-    { id: 6, label: 'button6', code: 'code6' },
-    { id: 7, label: 'button7', code: 'code7' },
-    { id: 8, label: 'button8', code: 'code8' },
-    { id: 9, label: 'button9', code: 'code9' },
-    { id: 10, label: 'button10', code: 'code10' }
-  ];
-}
+  const { error, data } = await fetchGetButtonTree();
 
-const checks = shallowRef<number[]>([]);
+  if (!error) {
+    tree.value = (data || []) as ButtonConfig[];
+    expandedKeys.value = tree.value.map(item => item.key);
+  }
+}
 
 async function getChecks() {
-  console.log(props.roleId);
-  // request
-  checks.value = [1, 2, 3, 4, 5];
+  const { error, data } = await fetchGetRoleButtonIds(props.roleId);
+
+  if (!error) {
+    checks.value = (data || []).map(id => `btn-${id}`);
+  }
 }
 
-function handleSubmit() {
-  console.log(checks.value, props.roleId);
-  // request
-
-  window.$message?.success?.($t('common.modifySuccess'));
-
-  closeModal();
+function handleCheckedKeysUpdate(keys: Array<string | number>) {
+  checks.value = keys.map(key => String(key));
 }
 
-function init() {
-  getAllButtons();
-  getChecks();
+async function handleSubmit() {
+  const buttonIds = checks.value
+    .filter(key => key.startsWith('btn-'))
+    .map(key => Number(key.slice(4)))
+    .filter(id => Number.isFinite(id) && id > 0);
+
+  const { error } = await fetchUpdateRoleButtons(props.roleId, buttonIds);
+
+  if (!error) {
+    window.$message?.success?.($t('common.modifySuccess'));
+    closeModal();
+  }
 }
 
-// init
-init();
+async function init() {
+  await getAllButtons();
+  await getChecks();
+}
+
+watch(visible, val => {
+  if (val) {
+    void init();
+  }
+});
 </script>
 
 <template>
   <NModal v-model:show="visible" :title="title" preset="card" class="w-480px">
     <NTree
+      v-if="hasButtonNodes"
       v-model:checked-keys="checks"
+      v-model:expanded-keys="expandedKeys"
       :data="tree"
-      key-field="id"
-      block-line
+      key-field="key"
       checkable
       expand-on-click
       virtual-scroll
+      block-line
+      default-expand-all
       class="h-280px"
+      :checked-keys="checks"
+      @update:checked-keys="handleCheckedKeysUpdate"
     />
+    <NEmpty v-else description="当前没有可分配的按钮权限" class="h-280px justify-center" />
     <template #footer>
       <NSpace justify="end">
         <NButton size="small" class="mt-16px" @click="closeModal">

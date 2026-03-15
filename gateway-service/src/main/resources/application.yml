@@ -1,54 +1,6 @@
-server:
-  port: 8888
-
 spring:
   application:
     name: gateway-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
 
-  cloud:
-    nacos:
-      discovery:
-        server-addr: 127.0.0.1:8848
-    gateway:
-      # 访问日志配置
-      access-log:
-        enabled: true
-        # 只记录请求路径
-        include-format: true
-      routes:
-        - id: auth-route
-          uri: lb://auth-service
-          predicates:
-            - Path=/auth/**
-        - id: user-route
-          uri: lb://user-service
-          predicates:
-            - Path=/user/**
-        - id: route-route
-          uri: lb://user-service
-          predicates:
-            - Path=/route/**
-#          filters:
-#            - RewritePath=/user(?<segment>.*), /systemManage\1
-  # Redis 配置
-  data:
-    redis:
-      host: 127.0.0.1
-      port: 6379
-      password:
-      lettuce:
-        pool:
-          max-active: 8
-          max-wait: -1
-          max-idle: 8
-          min-idle: 0
-
-# Sa-Token 配置
-sa-token:
-  token-name: satoken
-  is-read-cookie: false
-  is-read-header: true
-  is-concurrent: true
-  is-share: true
-  token-style: uuid
-  is-log: false

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.jun.user.dto.MenuDTO;
 import com.jun.user.dto.MenuOperateRequest;
 import com.jun.user.dto.MenuTreeDTO;
+import com.jun.user.dto.ButtonTreeNodeDTO;
 import com.jun.user.dto.CurrentUserProfileDTO;
 import com.jun.user.dto.RoleDTO;
 import com.jun.user.dto.RoleOperateRequest;
@@ -48,6 +49,14 @@ public interface UserService extends IService<User> {
     List<Long> getRoleMenuIds(Long roleId);
 
     void updateRoleMenus(Long roleId, List<Long> menuIds);
+
+    List<ButtonTreeNodeDTO> getButtonTree();
+
+    List<Long> getRoleButtonIds(Long roleId);
+
+    void updateRoleButtons(Long roleId, List<Long> buttonIds);
+
+    List<String> getUserButtons(Long userId);
 
     IPage<MenuDTO> getMenuList(Integer current, Integer size);
 

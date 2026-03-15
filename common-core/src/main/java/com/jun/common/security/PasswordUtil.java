@@ -1,14 +1,12 @@
 package com.jun.common.security;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 public final class PasswordUtil {
 
-    private static final String PREFIX = "{sha256}";
-    private static final String SALT = "jun-cloud-static-salt-v1";
+    private static final String BCRYPT_PREFIX = "{bcrypt}";
+    private static final String SHA256_PREFIX = "{sha256}";
+    private static final BCryptPasswordEncoder BCRYPT = new BCryptPasswordEncoder();
 
     private PasswordUtil() {
     }
@@ -17,27 +15,24 @@ public final class PasswordUtil {
         if (rawPassword == null) {
             return null;
         }
-        return PREFIX + sha256Base64(rawPassword + ":" + SALT);
+        return BCRYPT_PREFIX + BCRYPT.encode(rawPassword);
     }
 
     public static boolean matches(String rawPassword, String storedPassword) {
         if (rawPassword == null || storedPassword == null) {
             return false;
         }
-        if (storedPassword.startsWith(PREFIX)) {
-            return encode(rawPassword).equals(storedPassword);
+        if (storedPassword.startsWith(BCRYPT_PREFIX)) {
+            return BCRYPT.matches(rawPassword, storedPassword.substring(BCRYPT_PREFIX.length()));
         }
-        // Backward compatibility for legacy plain-text data
+        if (storedPassword.startsWith(SHA256_PREFIX)) {
+            return LegacySha256PasswordUtil.matches(rawPassword, storedPassword);
+        }
+        // One-time migration compatibility for legacy plain-text data.
         return rawPassword.equals(storedPassword);
     }
 
-    private static String sha256Base64(String val) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] bytes = digest.digest(val.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(bytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 algorithm not found", e);
-        }
+    public static boolean needsUpgrade(String storedPassword) {
+        return storedPassword != null && !storedPassword.startsWith(BCRYPT_PREFIX);
     }
 }

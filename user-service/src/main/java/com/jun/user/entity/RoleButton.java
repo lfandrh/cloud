@@ -9,22 +9,16 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-@TableName("sys_menu_button")
-public class
-MenuButton implements Serializable {
+@TableName("sys_role_button")
+public class RoleButton implements Serializable {
 
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableField("menu_id")
-    private Long menuId;
+    @TableField("role_id")
+    private Long roleId;
 
-    @TableField("button_name")
-    private String buttonName;
-
-    @TableField("button_code")
-    private String buttonCode;
-
-    @TableField("status")
-    private Integer status;
+    @TableField("button_id")
+    private Long buttonId;
 }
+

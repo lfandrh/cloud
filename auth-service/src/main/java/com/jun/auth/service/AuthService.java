@@ -28,6 +28,10 @@ public interface AuthService {
 
     TokenResponse refreshToken(String refreshToken);
 
+    void sendCaptcha(String phone);
+
+    boolean verifyCaptcha(String phone, String captcha);
+
     /**
      * 登出
      */

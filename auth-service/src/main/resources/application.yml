@@ -1,53 +1,6 @@
 spring:
   application:
     name: auth-service
-  # 数据库配置
-  datasource:
-    url: jdbc:mysql://localhost:3306/cloud?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: 123456
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  # MyBatis-Plus 配置
-  mybatis-plus:
-    mapper-locations: classpath*:/mapper/**/*.xml
-    type-aliases-package: com.jun.auth.entity
-    configuration:
-      map-underscore-to-camel-case: true
-      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    global-config:
-      db-config:
-        id-type: auto
-  # Nacos 注册中心
-  cloud:
-    nacos:
-      discovery:
-        server-addr: 127.0.0.1:8848
-  # Redis 配置
-  data:
-    redis:
-      host: 127.0.0.1
-      port: 6379
-      password:
-      lettuce:
-        pool:
-          max-active: 8
-          max-wait: -1
-          max-idle: 8
-          min-idle: 0
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
 
-# 服务端口
-server:
-  port: 8081
-
-# Sa-Token 配置
-sa-token:
-  # Token 有效期（单位：秒），默认 30 天
-  token-timeout: 2592000
-  # Token 最小有效期（单位：秒）
-  active-timeout: -1
-  # 是否在输出 JSON 时打印 Token
-  is-log: false
-  # Token 名称
-  token-name: satoken
-  # 是否从请求头读取 Token
-  is-read-header: true

@@ -80,6 +80,35 @@ export function fetchUpdateRoleMenus(roleId: number, menuIds: number[]) {
   });
 }
 
+/** get button tree */
+export function fetchGetButtonTree() {
+  return request<Api.SystemManage.ButtonTree[]>({
+    url: '/user/getButtonTree',
+    method: 'get'
+  });
+}
+
+/** get role button ids */
+export function fetchGetRoleButtonIds(roleId: number) {
+  return request<number[]>({
+    url: '/user/getRoleButtonIds',
+    method: 'get',
+    params: { roleId }
+  });
+}
+
+/** update role buttons */
+export function fetchUpdateRoleButtons(roleId: number, buttonIds: number[]) {
+  return request<null>({
+    url: '/user/updateRoleButtons',
+    method: 'post',
+    data: {
+      id: roleId,
+      buttonIds
+    }
+  });
+}
+
 /** get user list */
 export function fetchGetUserList(params?: Api.SystemManage.UserSearchParams) {
   return request<Api.SystemManage.UserList>({

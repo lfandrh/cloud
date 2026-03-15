@@ -1,15 +1,20 @@
 <script setup lang="tsx">
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 import { NButton, NPopconfirm, NTag } from 'naive-ui';
 import { enableStatusRecord, userGenderRecord } from '@/constants/business';
 import { fetchGetUserList, fetchDeleteUser, fetchBatchDeleteUser } from '@/service/api';
 import { useAppStore } from '@/store/modules/app';
+import { useAuth } from '@/hooks/business/auth';
 import { defaultTransform, useNaivePaginatedTable, useTableOperate } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import UserOperateDrawer from './modules/user-operate-drawer.vue';
 import UserSearch from './modules/user-search.vue';
 
 const appStore = useAppStore();
+const { hasAuth } = useAuth();
+
+const hasAddPermission = computed(() => hasAuth(['manage_user:add', 'add']));
+const hasDeletePermission = computed(() => hasAuth(['manage_user:delete', 'delete']));
 
 const searchParams: Api.SystemManage.UserSearchParams = reactive({
   current: 1,
@@ -117,16 +122,18 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
           <NButton type="primary" ghost size="small" onClick={() => edit(row.id)}>
             {$t('common.edit')}
           </NButton>
-          <NPopconfirm disabled={row.userName === 'admin'} onPositiveClick={() => handleDelete(row.id)}>
-            {{
-              default: () => $t('common.confirmDelete'),
-              trigger: () => (
-                <NButton type="error" ghost size="small" disabled={row.userName === 'admin'}>
-                  {$t('common.delete')}
-                </NButton>
-              )
-            }}
-          </NPopconfirm>
+          {hasDeletePermission.value && (
+            <NPopconfirm disabled={row.userName === 'admin'} onPositiveClick={() => handleDelete(row.id)}>
+              {{
+                default: () => $t('common.confirmDelete'),
+                trigger: () => (
+                  <NButton type="error" ghost size="small" disabled={row.userName === 'admin'}>
+                    {$t('common.delete')}
+                  </NButton>
+                )
+              }}
+            </NPopconfirm>
+          )}
         </div>
       )
     }
@@ -176,12 +183,30 @@ function edit(id: number) {
       <template #header-extra>
         <TableHeaderOperation
           v-model:columns="columnChecks"
-          :disabled-delete="checkedRowKeys.length === 0"
+          :disabled-delete="checkedRowKeys.length === 0 || !hasDeletePermission"
           :loading="loading"
-          @add="handleAdd"
-          @delete="handleBatchDelete"
           @refresh="getData"
-        />
+        >
+          <template #default>
+            <NButton v-if="hasAddPermission" size="small" ghost type="primary" @click="handleAdd">
+              <template #icon>
+                <icon-ic-round-plus class="text-icon" />
+              </template>
+              {{ $t('common.add') }}
+            </NButton>
+            <NPopconfirm v-if="hasDeletePermission" @positive-click="handleBatchDelete">
+              <template #trigger>
+                <NButton size="small" ghost type="error" :disabled="checkedRowKeys.length === 0">
+                  <template #icon>
+                    <icon-ic-round-delete class="text-icon" />
+                  </template>
+                  {{ $t('common.batchDelete') }}
+                </NButton>
+              </template>
+              {{ $t('common.confirmDelete') }}
+            </NPopconfirm>
+          </template>
+        </TableHeaderOperation>
       </template>
       <NDataTable
         v-model:checked-row-keys="checkedRowKeys"

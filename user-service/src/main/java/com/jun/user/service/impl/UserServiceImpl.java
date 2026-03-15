@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.jun.common.enums.AppErrorCode;
 import com.jun.common.exception.BusinessException;
 import com.jun.common.security.PasswordUtil;
 import com.jun.user.dto.MenuButtonDTO;
+import com.jun.user.dto.ButtonTreeNodeDTO;
 import com.jun.user.dto.MenuDTO;
 import com.jun.user.dto.MenuOperateRequest;
 import com.jun.user.dto.MenuTreeDTO;
@@ -20,12 +22,14 @@ import com.jun.user.dto.UserSearchParams;
 import com.jun.user.entity.Menu;
 import com.jun.user.entity.MenuButton;
 import com.jun.user.entity.Role;
+import com.jun.user.entity.RoleButton;
 import com.jun.user.entity.User;
 import com.jun.user.entity.UserRole;
 import com.jun.user.mapper.MenuButtonMapper;
 import com.jun.user.mapper.MenuMapper;
 import com.jun.user.mapper.RoleMapper;
 import com.jun.user.mapper.RoleMenuMapper;
+import com.jun.user.mapper.RoleButtonMapper;
 import com.jun.user.mapper.UserMapper;
 import com.jun.user.mapper.UserRoleMapper;
 import com.jun.user.service.UserService;
@@ -52,6 +56,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final RoleMapper roleMapper;
     private final RoleMenuMapper roleMenuMapper;
+    private final RoleButtonMapper roleButtonMapper;
     private final UserRoleMapper userRoleMapper;
     private final MenuMapper menuMapper;
     private final MenuButtonMapper menuButtonMapper;
@@ -102,7 +107,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User existUser = getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getUserName, request.getUserName()));
         if (existUser != null) {
-            throw new BusinessException("Username already exists");
+            throw new BusinessException(AppErrorCode.RESOURCE_CONFLICT, "Username already exists");
         }
 
         User user = new User();
@@ -124,13 +129,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void updateUser(UserOperateRequest request) {
         User user = getById(request.getId());
         if (user == null) {
-            throw new BusinessException("User does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "User does not exist");
         }
 
         User existUser = getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getUserName, request.getUserName()));
         if (existUser != null && !existUser.getId().equals(request.getId())) {
-            throw new BusinessException("Username already exists");
+            throw new BusinessException(AppErrorCode.RESOURCE_CONFLICT, "Username already exists");
         }
 
         user.setUserName(request.getUserName());
@@ -156,10 +161,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void deleteUser(Long id) {
         User user = getById(id);
         if (user == null) {
-            throw new BusinessException("User does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "User does not exist");
         }
         if ("admin".equalsIgnoreCase(user.getUserName())) {
-            throw new BusinessException("Default super admin cannot be deleted");
+            throw new BusinessException(AppErrorCode.PERMISSION_DENIED, "Default super admin cannot be deleted");
         }
         userRoleMapper.delete(new LambdaQueryWrapper<UserRole>()
                 .eq(UserRole::getUserId, id));
@@ -178,7 +183,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User getUserById(Long id) {
         User user = getById(id);
         if (user == null) {
-            throw new BusinessException("User does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "User does not exist");
         }
         return user;
     }
@@ -222,12 +227,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Transactional
     public void updateRole(RoleOperateRequest request) {
         if (request.getId() == null) {
-            throw new BusinessException("Role id is required");
+            throw new BusinessException(AppErrorCode.BAD_REQUEST, "Role id is required");
         }
 
         Role role = roleMapper.selectById(request.getId());
         if (role == null) {
-            throw new BusinessException("Role does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "Role does not exist");
         }
 
         validateRoleUnique(request.getRoleName(), request.getRoleCode(), request.getId());
@@ -248,14 +253,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         Role role = roleMapper.selectById(roleId);
         if (role == null) {
-            throw new BusinessException("Role does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "Role does not exist");
         }
         if (isProtectedRole(role)) {
-            throw new BusinessException("Built-in role cannot be deleted");
+            throw new BusinessException(AppErrorCode.PERMISSION_DENIED, "Built-in role cannot be deleted");
         }
 
         roleMenuMapper.delete(new LambdaQueryWrapper<com.jun.user.entity.RoleMenu>()
                 .eq(com.jun.user.entity.RoleMenu::getRoleId, roleId));
+        roleButtonMapper.delete(new LambdaQueryWrapper<RoleButton>()
+                .eq(RoleButton::getRoleId, roleId));
         userRoleMapper.delete(new LambdaQueryWrapper<UserRole>()
                 .eq(UserRole::getRoleId, roleId));
         roleMapper.deleteById(roleId);
@@ -288,14 +295,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Transactional
     public void updateRoleMenus(Long roleId, List<Long> menuIds) {
         if (roleId == null) {
-            throw new BusinessException("Role id is required");
+            throw new BusinessException(AppErrorCode.BAD_REQUEST, "Role id is required");
         }
         if (roleMapper.selectById(roleId) == null) {
-            throw new BusinessException("Role does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "Role does not exist");
         }
 
         roleMenuMapper.delete(new LambdaQueryWrapper<com.jun.user.entity.RoleMenu>()
                 .eq(com.jun.user.entity.RoleMenu::getRoleId, roleId));
+        roleButtonMapper.delete(new LambdaQueryWrapper<RoleButton>()
+                .eq(RoleButton::getRoleId, roleId));
 
         if (menuIds == null || menuIds.isEmpty()) {
             return;
@@ -311,6 +320,142 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             roleMenu.setMenuId(menuId);
             roleMenuMapper.insert(roleMenu);
         }
+    }
+
+    @Override
+    public List<ButtonTreeNodeDTO> getButtonTree() {
+        List<Menu> menus = menuMapper.selectList(new LambdaQueryWrapper<Menu>()
+                .eq(Menu::getStatus, 1)
+                .eq(Menu::getMenuType, 2)
+                .orderByAsc(Menu::getOrderNum)
+                .orderByAsc(Menu::getId));
+        if (menus.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> menuIds = menus.stream().map(Menu::getId).filter(Objects::nonNull).collect(Collectors.toList());
+        List<MenuButton> buttons = menuButtonMapper.selectList(new LambdaQueryWrapper<MenuButton>()
+                .eq(MenuButton::getStatus, 1)
+                .in(MenuButton::getMenuId, menuIds)
+                .orderByAsc(MenuButton::getId));
+        Map<Long, List<MenuButton>> menuButtonMap = buttons.stream()
+                .collect(Collectors.groupingBy(MenuButton::getMenuId, LinkedHashMap::new, Collectors.toList()));
+
+        List<ButtonTreeNodeDTO> tree = new ArrayList<>();
+        for (Menu menu : menus) {
+            ButtonTreeNodeDTO menuNode = new ButtonTreeNodeDTO();
+            menuNode.setKey("menu-" + menu.getId());
+            menuNode.setLabel(StringUtils.hasText(menu.getMenuName()) ? menu.getMenuName() : "menu-" + menu.getId());
+            menuNode.setDisabled(false);
+            List<ButtonTreeNodeDTO> children = new ArrayList<>();
+
+            for (MenuButton button : menuButtonMap.getOrDefault(menu.getId(), Collections.emptyList())) {
+                ButtonTreeNodeDTO buttonNode = new ButtonTreeNodeDTO();
+                buttonNode.setKey("btn-" + button.getId());
+                buttonNode.setLabel(StringUtils.hasText(button.getButtonName()) ? button.getButtonName() : button.getButtonCode());
+                buttonNode.setDisabled(false);
+                children.add(buttonNode);
+            }
+            menuNode.setChildren(children);
+            if (!children.isEmpty()) {
+                tree.add(menuNode);
+            }
+        }
+        return tree;
+    }
+
+    @Override
+    public List<Long> getRoleButtonIds(Long roleId) {
+        if (roleId == null) {
+            return Collections.emptyList();
+        }
+        return roleButtonMapper.selectList(new LambdaQueryWrapper<RoleButton>()
+                        .eq(RoleButton::getRoleId, roleId))
+                .stream()
+                .map(RoleButton::getButtonId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void updateRoleButtons(Long roleId, List<Long> buttonIds) {
+        if (roleId == null) {
+            throw new BusinessException(AppErrorCode.BAD_REQUEST, "Role id is required");
+        }
+        if (roleMapper.selectById(roleId) == null) {
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "Role does not exist");
+        }
+
+        roleButtonMapper.delete(new LambdaQueryWrapper<RoleButton>().eq(RoleButton::getRoleId, roleId));
+        if (buttonIds == null || buttonIds.isEmpty()) {
+            return;
+        }
+
+        Set<Long> roleMenuIds = new LinkedHashSet<>(getRoleMenuIds(roleId));
+        if (roleMenuIds.isEmpty()) {
+            throw new BusinessException(AppErrorCode.BAD_REQUEST, "Please assign menu permissions before button permissions");
+        }
+
+        List<Long> dedupButtonIds = buttonIds.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        if (dedupButtonIds.isEmpty()) {
+            return;
+        }
+
+        List<MenuButton> validButtons = menuButtonMapper.selectList(new LambdaQueryWrapper<MenuButton>()
+                .in(MenuButton::getId, dedupButtonIds)
+                .eq(MenuButton::getStatus, 1)
+                .in(MenuButton::getMenuId, roleMenuIds));
+
+        Set<Long> validButtonIds = validButtons.stream().map(MenuButton::getId).collect(Collectors.toSet());
+        for (Long buttonId : dedupButtonIds) {
+            if (!validButtonIds.contains(buttonId)) {
+                throw new BusinessException(AppErrorCode.BAD_REQUEST, "Button id is invalid for this role: " + buttonId);
+            }
+        }
+
+        for (Long buttonId : dedupButtonIds) {
+            RoleButton roleButton = new RoleButton();
+            roleButton.setRoleId(roleId);
+            roleButton.setButtonId(buttonId);
+            roleButtonMapper.insert(roleButton);
+        }
+    }
+
+    @Override
+    public List<String> getUserButtons(Long userId) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
+        List<UserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>()
+                .eq(UserRole::getUserId, userId));
+        if (userRoles.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Long> roleIds = userRoles.stream().map(UserRole::getRoleId).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        if (roleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<RoleButton> roleButtons = roleButtonMapper.selectList(new LambdaQueryWrapper<RoleButton>().in(RoleButton::getRoleId, roleIds));
+        if (roleButtons.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Long> buttonIds = roleButtons.stream().map(RoleButton::getButtonId).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        if (buttonIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<MenuButton> menuButtons = menuButtonMapper.selectList(new LambdaQueryWrapper<MenuButton>()
+                .in(MenuButton::getId, buttonIds)
+                .eq(MenuButton::getStatus, 1));
+
+        return menuButtons.stream()
+                .map(MenuButton::getButtonCode)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -450,11 +595,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Transactional
     public void updateMenu(MenuOperateRequest request) {
         if (request.getId() == null) {
-            throw new BusinessException("Menu id is required");
+            throw new BusinessException(AppErrorCode.BAD_REQUEST, "Menu id is required");
         }
         Menu exist = menuMapper.selectById(request.getId());
         if (exist == null) {
-            throw new BusinessException("Menu does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "Menu does not exist");
         }
 
         fillMenuEntity(exist, request);
@@ -473,7 +618,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         Menu menu = menuMapper.selectById(id);
         if (menu == null) {
-            throw new BusinessException("Menu does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "Menu does not exist");
         }
         deleteMenuRecursively(id);
     }
@@ -492,11 +637,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public CurrentUserProfileDTO getCurrentUserProfile(Long userId) {
         if (userId == null) {
-            throw new BusinessException("User not logged in");
+            throw new BusinessException(AppErrorCode.USER_NOT_LOGGED_IN);
         }
         User user = getById(userId);
         if (user == null) {
-            throw new BusinessException("User does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "User does not exist");
         }
 
         CurrentUserProfileDTO profile = new CurrentUserProfileDTO();
@@ -514,11 +659,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Transactional
     public void updateCurrentUserProfile(Long userId, UpdateCurrentUserProfileRequest request) {
         if (userId == null) {
-            throw new BusinessException("User not logged in");
+            throw new BusinessException(AppErrorCode.USER_NOT_LOGGED_IN);
         }
         User user = getById(userId);
         if (user == null) {
-            throw new BusinessException("User does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "User does not exist");
         }
 
         user.setNickName(defaultString(request.getNickName()));
@@ -533,21 +678,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Transactional
     public void updateCurrentUserPassword(Long userId, UpdateCurrentUserPasswordRequest request) {
         if (userId == null) {
-            throw new BusinessException("User not logged in");
+            throw new BusinessException(AppErrorCode.USER_NOT_LOGGED_IN);
         }
         if (!StringUtils.hasText(request.getOldPassword()) || !StringUtils.hasText(request.getNewPassword())) {
-            throw new BusinessException("Old password and new password are required");
+            throw new BusinessException(AppErrorCode.BAD_REQUEST, "Old password and new password are required");
         }
 
         User user = getById(userId);
         if (user == null) {
-            throw new BusinessException("User does not exist");
+            throw new BusinessException(AppErrorCode.RESOURCE_NOT_FOUND, "User does not exist");
         }
         if (!PasswordUtil.matches(request.getOldPassword(), user.getPassword())) {
-            throw new BusinessException("Old password is incorrect");
+            throw new BusinessException(AppErrorCode.BAD_REQUEST, "Old password is incorrect");
         }
         if (Objects.equals(request.getOldPassword(), request.getNewPassword())) {
-            throw new BusinessException("New password cannot be the same as old password");
+            throw new BusinessException(AppErrorCode.BAD_REQUEST, "New password cannot be the same as old password");
         }
 
         user.setPassword(PasswordUtil.encode(request.getNewPassword()));
@@ -569,7 +714,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return;
         }
 
-        List<Role> roles = roleMapper.selectList(null);
+        List<String> distinctCodes = roleCodes.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .collect(Collectors.toList());
+        if (distinctCodes.isEmpty()) {
+            return;
+        }
+
+        List<Role> roles = roleMapper.selectList(new LambdaQueryWrapper<Role>()
+                .in(Role::getRoleCode, distinctCodes));
         Map<String, Long> roleCodeMap = roles.stream()
                 .collect(Collectors.toMap(Role::getRoleCode, Role::getId, (a, b) -> a));
 
@@ -697,12 +852,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private void validateRoleUnique(String roleName, String roleCode, Long currentRoleId) {
         Role byName = roleMapper.selectOne(new LambdaQueryWrapper<Role>().eq(Role::getRoleName, roleName));
         if (byName != null && (currentRoleId == null || !byName.getId().equals(currentRoleId))) {
-            throw new BusinessException("Role name already exists");
+            throw new BusinessException(AppErrorCode.RESOURCE_CONFLICT, "Role name already exists");
         }
 
         Role byCode = roleMapper.selectOne(new LambdaQueryWrapper<Role>().eq(Role::getRoleCode, roleCode));
         if (byCode != null && (currentRoleId == null || !byCode.getId().equals(currentRoleId))) {
-            throw new BusinessException("Role code already exists");
+            throw new BusinessException(AppErrorCode.RESOURCE_CONFLICT, "Role code already exists");
         }
     }
 

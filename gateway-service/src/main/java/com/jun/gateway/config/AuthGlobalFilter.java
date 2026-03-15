@@ -31,7 +31,6 @@ public class AuthGlobalFilter implements GlobalFilter {
     private static final List<String> EXCLUDE_EXACT_PATHS = Arrays.asList(
             "/auth/login",
             "/auth/loginByPhone",
-            "/auth/logout",
             "/auth/refreshToken",
             "/auth/sendCaptcha",
             "/auth/verifyCaptcha",

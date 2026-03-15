@@ -1,0 +1,32 @@
+server:
+  port: ${USER_SERVER_PORT:8082}
+
+spring:
+  datasource:
+    url: ${MYSQL_URL}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  mybatis-plus:
+    mapper-locations: classpath*:/mapper/**/*.xml
+    type-aliases-package: com.jun.user.entity
+    configuration:
+      map-underscore-to-camel-case: true
+    global-config:
+      db-config:
+        id-type: auto
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+
+sa-token:
+  token-timeout: 2592000
+  active-timeout: -1
+  is-log: false
+

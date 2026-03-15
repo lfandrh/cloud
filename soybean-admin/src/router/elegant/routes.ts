@@ -697,7 +697,8 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base$view.user-center',
     meta: {
       title: 'user-center',
-      i18nKey: 'route.user-center'
+      i18nKey: 'route.user-center',
+      hideInMenu: true
     }
   }
 ];
